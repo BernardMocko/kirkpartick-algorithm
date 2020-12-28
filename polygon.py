@@ -53,19 +53,7 @@ class Polygon:
     #moze warto bedzie tu dodac epsilon
     def __classify_vertices(self, epsilon = 0):
         #kolory opisane ponizej do pozniejszej wizualizacji
-        classification = {
-            # 'limegreen'
-            'poczatkowe': [],
-            # 'red'
-            'koncowe': [],
-            # 'mediumblue'
-            'laczace': [],
-            # 'lightsteelblue'
-            'dzielace': [],
-            # 'sienna'
-            'prawidlowe': []
-        }
-
+        classification = {}
         V = self.vertices
         n = len(V)
 
@@ -75,17 +63,17 @@ class Polygon:
             d = Point.det(p, q, r)
             if diff[0] > 0 and diff[1] > 0:  # oba punkty są powyzej
                 if d > epsilon:  # phi > pi / clockwise
-                    classification['laczace'].append(q)
+                    classification[q]='laczace'
                     continue
                 elif d < epsilon:  # phi < pi / counterclockwise
-                    classification['koncowe'].append(q)
+                    classification[q]='koncowe'
                     continue
             elif diff[0] < 0 and diff[1] < 0:  # oba punkty są ponizej
                 if d > epsilon:  # phi > pi
-                    classification['dzielace'].append(q)
+                    classification[q]'dzielace'
                     continue
                 elif d < epsilon:  # phi < pi
-                    classification['poczatkowe'].append(q)
+                    classification[q]'poczatkowe'
                     continue
             else:  # prawidlowy
                 classification["prawidlowe"].append(q)
@@ -99,18 +87,13 @@ class Polygon:
         edges.sort(compareKey2);
         helpers=[]#pomocnicy
         broom=[]#miotla
-        dictonary={}
-        for name in classification:
-            for point in classification[name]:
-                dictonary[point] = name
         for point in points:
-            if dictonary[point]=='prawidlowe':
+            if classification[point]=='prawidlowe':
                 
-            else if dictonary[point]=='poczatkowe':
+            else if classification[point]=='poczatkowe':
+                helpers.append(points)
+            else if classification[point]=='koncowe':
                 
-            else if dictonary[point]=='koncowe':
+            else if classification[point]=='dzielace':
                 
-            else if dictonary[point]=='dzielace':
-                
-            else if dictonary[point]=='laczace':
-              
+            else if classification[point]=='laczace':
