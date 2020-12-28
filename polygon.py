@@ -1,3 +1,30 @@
+def compareKey1(key):
+    return key.y;
+def compareKey2(key):
+    return key[1].y;
+def binary_searchleftmost(arr,val,left,right): 
+    if left==right:
+        if arr[left]==val:
+            return left
+        else:
+            return -1
+    mid = (int)(left+right)/2
+    if a[mid] < val:
+        return binsearch(arr,val,mid+1,right);
+    else:
+        return binsearch(arr,val,left,mid);
+def  binary_searchrightmost(arr,val, left, right):
+    
+    if left==right:
+        if arr[left]==val:
+            return left;
+        else:
+            return -1
+    mid = (int)(left+right+1)/2
+    if a[mid] < val:
+        return binsearch(arr,val,mid+1,right)
+    else:
+        return binsearch(arr,val,left,mid)
 class Polygon:
     def __init__(self, vertices): #wierzchołki są zadawane w lewa strone
         self.vertices = self.__sorted_vertices(vertices)
@@ -70,13 +97,13 @@ class Polygon:
                     continue
             elif diff[0] < 0 and diff[1] < 0:  # oba punkty są ponizej
                 if d > epsilon:  # phi > pi
-                    classification[q]'dzielace'
+                    classification[q]='dzielace'
                     continue
                 elif d < epsilon:  # phi < pi
-                    classification[q]'poczatkowe'
+                    classification[q]='poczatkowe'
                     continue
             else:  # prawidlowy
-                classification["prawidlowe"].append(q)
+                classification[q]='prawidlowe'
         return classification;
     def __PrepareForTriangulation(self,classification):
         points=self.vertices.copy()
@@ -90,10 +117,11 @@ class Polygon:
         for point in points:
             if classification[point]=='prawidlowe':
                 
-            else if classification[point]=='poczatkowe':
-                helpers.append(points)
-            else if classification[point]=='koncowe':
+            elif classification[point]=='poczatkowe':
+                helpers.append(point)
+                miotla.append()
+            elif classification[point]=='koncowe':
                 
-            else if classification[point]=='dzielace':
+            elif classification[point]=='dzielace':
                 
-            else if classification[point]=='laczace':
+            elif classification[point]=='laczace':
