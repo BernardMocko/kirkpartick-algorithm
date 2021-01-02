@@ -1,0 +1,95 @@
+def findTheLowestPoint(points,n):
+    min_x=float('inf')
+    min_y=float('inf')
+    index_min_y=0
+    for i in range(0,n):
+        if points[i].point.y<=min_y:
+            if points[i].point.y==min_y:
+                if points[i].point.x<min_x:
+                    index_min_y=i
+                    min_x=points[i].x
+            else:
+                min_x=points[i].point.x
+                min_y=points[i].point.y
+                index_min_y=i
+    points[index_min_y],points[0]=points[0],points[index_min_y]
+def determinant_3x3(ax,ay,bx,by,cx,cy):
+    wyznacznik=ax*by+ay*cx+bx*cy-ax*cy-ay*bx-by*cx
+    if math.isclose(0,wyznacznik,abs_tol=1e-12):
+        if bx!=cx or by!=cy:
+            return 0 #wspolliniowosc
+        else:
+            return 2
+    elif wyznacznik>0:
+        return 1 #kat jest wiekszy ==lezy na lewo od
+    else:
+        return -1 #kat jest mniejszy == lezy na prawo od
+def dete(p, q, r):
+    return (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
+def JarvisAlgorithm(points):
+    n=len(points)
+    if n<3:
+        return None
+    findTheLowestPoint(points,n)
+    small_x=points[0].x
+    small_y=points[0].y
+    for i in range(1,n):
+        o_x=points[i-1].point.x
+        o_y=points[i-1].point.y
+        for j in range (i+1,n):
+            determinant=determinant_3x3(o_x,o_y,points[i].point.x,points[i].point.y,points[j].point.x,points[j].point.y)
+            if determinant==-1:
+                points[i],points[j]=points[j],points[i]
+            elif determinant==0:
+                if (abs(points[i].point.x-o_x)>abs(points[j].point.x-o_x) 
+                or abs(points[i].point.y-o_y)>abs(points[j].point.y-o_y)):
+                    points[i],points[j]=points[j],points[i]
+        if determinant_3x3(o_x,o_y,points[i].point.x,points[i].point.y,small_x,small_y)!=1:
+            if i>1:
+                return points[0:i]
+    if determinant_3x3(points[1].point.x,points[1].point.y,small_x,small_y,points[n-1].point.x,points[n-1].point.y)!=0:
+        return points
+  def __createBigTriangle(self):
+        rim=JarvisAlgorithm(self.vertices.copy())
+        outCome=[]
+        minY=rim[0].y
+        minX=rim[0].x
+        maxX=minX
+        maxY=minY
+        for i in range(1,len(rim)):
+            if(rim[i].point.x>maxX):
+                maxX=rim[i].point.x
+            elif(rim[i].point.x<minX):
+                minX=rim[i].point.x
+            if rim[i].point.y>maxY:
+                maxY=rim[i].point.y
+        minX-=(maxX-minX)*0.1
+        maxX+=(maxX-minX)*0.1
+        minY-=(maxY-minY)*0.1
+        maxY+=(maxY-minY)*0.1
+        lewo=Vertex(Point(minX-(maxY-minY),minY))
+        prawo=Vertex(Point(minX+(maxY-minY),minY))
+        gora=Vertex(Point((maxX+minX)/2,maxY+(maxX-minX)/2))
+        outCome.append(lewo)
+        outCome.append(prawo)
+        outCome.append(gora)
+        j=1
+        outCome.append([prawo,rim[0]])
+        outCome.append([lewo,rim[0]])
+        j=0
+        while j<len(rim):
+            if dete(rim[j-1].point,rim[j].point,gora.point)<0:
+                break
+            outCome.append([prawo,rim[j]])
+            j+=1
+        outCome.append(gora,rim[j])
+        while j<len(rim):
+            if dete(rim[j-1].point,rim[j].point,lewo.point)<0:
+                break
+            outCome.append([gora,rim[j]])
+            j+=1
+        outCome.append([prawo,rim[j]])
+        while j<len(rim):
+            outCome.append([lewo,rim[j]])
+            j+=1
+        return outCome  
