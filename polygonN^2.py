@@ -219,7 +219,6 @@ class Polygon:
                            (vertex.point.y-broom[i][1][1].point.y)+broom[i][1][1].point.x)
                         curr_dis-=vertex.point.x
                         curr_dis*=-1
-                        type(curr_dis)
                         if curr_dis>0 and curr_dis<distance:
                             distance=curr_dis
                             indeks=i
