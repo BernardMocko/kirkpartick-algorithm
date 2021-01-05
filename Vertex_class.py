@@ -7,8 +7,6 @@ class Vertex:
         self.triangles = set()
         self.sides = set()
 
-
-
     #zastanowić się nad tym czy powinno się jeszcze triangles porownywac
     def __eq__(self, other):
         return isinstance(other, Vertex) and self.point == other.point
