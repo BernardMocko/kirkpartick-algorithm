@@ -143,13 +143,13 @@ class Polygon:
                         start=i
                         break
                 if(edges[start][0].point.y>edges[start][1].point.y):
-                    edge=broom.search(vertex)
+                    edge=broom.searchVertex(vertex)
                     if classification[edge.label.helper.point]=='laczace':
                         newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                    broom=broom.remove(edge)
+                    broom=broom.remove(edge.label)
                     broom=broom.insert(Broom(vertex,edges[start][0],edges[start][1]))
                 else:
-                    edge=broom.search(vertex)
+                    edge=broom.searchBroom(Broom(vertex,vertex,vertex))
                     if classification[edge.label.helper.point]=='laczace':
                         newEdges.append([edge.label.helper,vertex])
                     edge.label.helper=vertex
@@ -160,12 +160,12 @@ class Polygon:
                         broom=broom.insert(Broom(vertex,edges[i][0],edges[i][1]))
                         break
             elif classification[vertex.point]=='koncowe':
-                edge=broom.search(vertex)
+                edge=broom.searchVertex(vertex)
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                broom=broom.remove(edge)
+                broom=broom.remove(edge.label)
             elif classification[vertex.point]=='dzielace':
-                edge=broom.search(vertex)
+                edge=broom.searchBroom(Broom(vertex,vertex,vertex))
                 newEdges.append([edge.label.helper,edge.label.vertices[0]])
                 edge.helper=vertex
                 start=binarySearchLeftMost(edges,vertex.point.y,0,len(edges)-1)
@@ -174,11 +174,11 @@ class Polygon:
                         broom=broom.insert(Broom(vertex,edges[i][0],edges[i][1]))
                         break
             elif classification[vertex.point]=='laczace':
-                edge=broom.search(vertex)
+                edge=broom.searchVertex(vertex)
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                broom=broom.remove(edge)
-                edge=broom.search(vertex)
+                broom=broom.remove(edge.label)
+                edge=broom.searchBroom(Broom(vertex,vertex,vertex))
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
                 edge.label.helper=vertex
