@@ -6,7 +6,7 @@ class Broom:
         self.vertices = (v1, v2)
         self.helper=helper
     def __eq__(self, other):
-        return self.vertices[0] == other
+        return self.vertices[0] == other.vertices[0]
     def __gt__(self, other):
         if not isinstance(other,Broom):
             return False
@@ -15,17 +15,17 @@ class Broom:
         maxY=other.vertices[0].point.y
         maxX=other.vertices[0].point.x
         oo=0
-        if other.vertices[1].point.y<minY:
+        if maxY<minY:
             minY,maxY=maxY,minY
             minX,maxX=maxX,minX
             oo=1
         newX=0
         if oo==0:
-            newX=((maxX-self.vertices[1].point.x)/(maxY-self.vertices[1].point.y)*
-               (minY-self.vertices[1].point.y)+self.vertices[1].point.x)
-        else:
             newX=((maxX-other.vertices[1].point.x)/(maxY-other.vertices[1].point.y)*
                (minY-other.vertices[1].point.y)+other.vertices[1].point.x)
+        else:
+            newX=((maxX-self.vertices[1].point.x)/(maxY-self.vertices[1].point.y)*
+               (minY-self.vertices[1].point.y)+self.vertices[1].point.x)
         if newX-minX>0:
             return True
         return False
