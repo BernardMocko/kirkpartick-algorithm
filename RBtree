@@ -1,6 +1,6 @@
 #file from: https://github.com/TheAlgorithms/Python/blob/master/data_structures/binary_tree/red_black_tree.py
-from projekt.Broom_class import *
-from projekt.Vertex_class import *
+from projekt.Broom_class import Broom
+from projekt.Vertex_class import Vertex
 """
 python/black : true
 flake8 : passed
@@ -337,29 +337,46 @@ class RedBlackTree:
         found somewhere in the tree.
         Guaranteed to run in O(log(n)) time.
         """
-        return self.search(label) is not None
+        return self.searchBroom(label) is not None
 
-    def search(self, vertex:Vertex) -> "RedBlackTree":
+    def searchVertex(self, vertex:Vertex) -> "RedBlackTree":
         """Search through the tree for label, returning its node if
-        it's found, and the nearest biger value otherwise.
+        it's found, and the None value otherwise.
         This method is guaranteed to run in O(log(n)) time.
         """
         if self.label.vertices[1] == vertex:
             return self
-        elif vertex < self.label.vertices[1]:
+        elif vertex > self.label.vertices[1]:
             if self.left is None:
-                while self.parent!= None and self.parent.label.vertices[1]<vertex:
+                return self.left
+            else:
+                return self.left.searchVertex(vertex)
+        else:
+            if self.right is None:
+                return self.right
+            else:
+                return self.right.searchVertex(vertex)
+    def searchBroom(self, broom:Broom) -> "RedBlackTree":
+        """Search through the tree for label, returning its node if
+        it's found, and the nearest biger value otherwise.
+        This method is guaranteed to run in O(log(n)) time.
+        """
+        if self.label == broom:
+            return self
+        elif broom < self.label:
+            if self.left is None:
+                while self.parent!= None and self.parent.label<broom:
                     self=self.parent
+                if self.parent!=None:
+                    return self.parent
                 return self
             else:
-                return self.left.search(vertex)
+                return self.left.searchBroom(broom)
         else:
             if self.right is None:
                 return self
             else:
-                return self.right.search(vertex)
-       
-
+                return self.right.searchBroom(broom)
     def floor(self, label: int) -> int:
         """Returns the largest element in this tree which is at most label.
         This method is guaranteed to run in O(log(n)) time."""
