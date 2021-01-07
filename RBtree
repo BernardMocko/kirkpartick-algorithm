@@ -339,7 +339,24 @@ class RedBlackTree:
         """
         return self.searchBroom(label) is not None
 
-    def search(self, broom:Broom) -> "RedBlackTree":
+    def searchVertex(self, vertex:Broom) -> "RedBlackTree":
+        """Search through the tree for label, returning its node if
+        it's found, and the None value otherwise.
+        This method is guaranteed to run in O(log(n)) time.
+        """
+        if self.label.vertices[1].point == vertex.helper.point:
+            return self
+        elif vertex > self.label:
+            if self.left is None:
+                return self.left
+            else:
+                return self.left.searchVertex(vertex)
+        else:
+            if self.right is None:
+                return self.right
+            else:
+                return self.right.searchVertex(vertex)
+    def searchBroom(self, broom:Broom) -> "RedBlackTree":
         """Search through the tree for label, returning its node if
         it's found, and the nearest biger value otherwise.
         This method is guaranteed to run in O(log(n)) time.
@@ -354,12 +371,12 @@ class RedBlackTree:
                     return self.parent
                 return self
             else:
-                return self.left.search(broom)
+                return self.left.searchBroom(broom)
         else:
             if self.right is None:
                 return self
             else:
-                return self.right.search(broom)
+                return self.right.searchBroom(broom)
     def floor(self, label: int) -> int:
         """Returns the largest element in this tree which is at most label.
         This method is guaranteed to run in O(log(n)) time."""
@@ -394,25 +411,7 @@ class RedBlackTree:
                 if attempt is not None:
                     return attempt
             return self.label
-
-    @property
-    def grandparent(self) -> "RedBlackTree":
-        """Get the current node's grandparent, or None if it doesn't exist."""
-        if self.parent is None:
-            return None
-        else:
-            return self.parent.parent
-
-    @property
-    def sibling(self) -> "RedBlackTree":
-        """Get the current node's sibling, or None if it doesn't exist."""
-        if self.parent is None:
-            return None
-        elif self.parent.left is self:
-            return self.parent.right
-        else:
-            return self.parent.left
-    def get_max(self):
+    def get_max(self) -> int:
         """Returns the largest element in this tree.
         This method is guaranteed to run in O(log(n)) time.
         """
@@ -431,6 +430,23 @@ class RedBlackTree:
             return self.left.get_min()
         else:
             return self.label
+    @property
+    def grandparent(self) -> "RedBlackTree":
+        """Get the current node's grandparent, or None if it doesn't exist."""
+        if self.parent is None:
+            return None
+        else:
+            return self.parent.parent
+
+    @property
+    def sibling(self) -> "RedBlackTree":
+        """Get the current node's sibling, or None if it doesn't exist."""
+        if self.parent is None:
+            return None
+        elif self.parent.left is self:
+            return self.parent.right
+        else:
+            return self.parent.left
 
     def is_left(self) -> bool:
         """Returns true iff this node is the left child of its parent."""
