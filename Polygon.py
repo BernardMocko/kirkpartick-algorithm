@@ -136,7 +136,6 @@ class Polygon:
         edges.sort(key=(compareKey2))  # TODO lambda
         broom=RedBlackTree()
         for vertex in points:
-            print(vertex.point.x,vertex.point.y)
             if classification[vertex.point]=='prawidlowe':
                 start=binarySearchLeftMost(edges,vertex.point.y,0,len(edges)-1)
                 for i in range(start,len(edges)):
