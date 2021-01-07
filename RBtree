@@ -339,24 +339,7 @@ class RedBlackTree:
         """
         return self.searchBroom(label) is not None
 
-    def searchVertex(self, vertex:Vertex) -> "RedBlackTree":
-        """Search through the tree for label, returning its node if
-        it's found, and the None value otherwise.
-        This method is guaranteed to run in O(log(n)) time.
-        """
-        if self.label.vertices[1] == vertex:
-            return self
-        elif vertex > self.label.vertices[1]:
-            if self.left is None:
-                return self.left
-            else:
-                return self.left.searchVertex(vertex)
-        else:
-            if self.right is None:
-                return self.right
-            else:
-                return self.right.searchVertex(vertex)
-    def searchBroom(self, broom:Broom) -> "RedBlackTree":
+    def search(self, broom:Broom) -> "RedBlackTree":
         """Search through the tree for label, returning its node if
         it's found, and the nearest biger value otherwise.
         This method is guaranteed to run in O(log(n)) time.
@@ -371,12 +354,12 @@ class RedBlackTree:
                     return self.parent
                 return self
             else:
-                return self.left.searchBroom(broom)
+                return self.left.search(broom)
         else:
             if self.right is None:
                 return self
             else:
-                return self.right.searchBroom(broom)
+                return self.right.search(broom)
     def floor(self, label: int) -> int:
         """Returns the largest element in this tree which is at most label.
         This method is guaranteed to run in O(log(n)) time."""
@@ -429,6 +412,25 @@ class RedBlackTree:
             return self.parent.right
         else:
             return self.parent.left
+    def get_max(self):
+        """Returns the largest element in this tree.
+        This method is guaranteed to run in O(log(n)) time.
+        """
+        if self.right:
+            # Go as far right as possible
+            return self.right.get_max()
+        else:
+            return self.label
+
+    def get_min(self) -> int:
+        """Returns the smallest element in this tree.
+        This method is guaranteed to run in O(log(n)) time.
+        """
+        if self.left:
+            # Go as far left as possible
+            return self.left.get_min()
+        else:
+            return self.label
 
     def is_left(self) -> bool:
         """Returns true iff this node is the left child of its parent."""
