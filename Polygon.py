@@ -18,6 +18,8 @@ class Polygon:
         self.sides = [] #jako listy
         self.__is_triangulated = False
         self.parent = None #dzielimy niemonotoniczny na monotoniczne i one mają ten bazowy jako parent
+        self.sub_polygons = []
+        self.additional_diagonals = []
         for i in range(len(self.vertices)):
             self.sides.append([(self.vertices[i].point.x, self.vertices[i].point.y),
                                (self.vertices[(i + 1) % len(self.vertices)].point.x,
@@ -55,9 +57,10 @@ class Polygon:
         C[self.top_point_index] = 1
         return C
 
-    def add_triangle(self, triangle):
+    def add_triangle(self, triangle, change = True):
         self.triangles.add(triangle)
-        triangle.polygon = self
+        if change:
+            triangle.polygon = self
 
     def __is_y_monotone(self):
         V = self.vertices
@@ -69,7 +72,6 @@ class Polygon:
                 return False
         return True
 
-    # moze warto bedzie tu dodac epsilon
     def __classify_vertices(self, epsilon=0):
         # kolory opisane ponizej do pozniejszej wizualizacji
         classification = {
@@ -125,115 +127,217 @@ class Polygon:
                   lines=[LinesCollection(self.sides)]))
         return classified_vertices
 
-    def PrepareForTriangulation(self):
+    #rozwiazanie brutalne, w przypadku rozwiazania prepare_for_triangulation() wkradały
+    #się błędy
+    def n2_prepare_for_triangulation(self):
         classification = self.__classify_vertices()
         points = self.vertices.copy()
         edges = []
         newEdges = []
         for i in range(len(points)):
             edges.append([points[i - 1], points[i]])
-        points.sort(key=(compareKey1), reverse=True)  # TODO lambda
-        edges.sort(key=(compareKey2))  # TODO lambda
-        broom=RedBlackTree()
+        points.sort(key=(compareKey1), reverse=True)  
+        edges.sort(key=(compareKey2))  
+        sweepline=RedBlackTree()
         for vertex in points:
             if classification[vertex.point]=='prawidlowe':
-                start=binarySearchLeftMost(edges,vertex.point.y,0,len(edges)-1)
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
                 for i in range(start,len(edges)):
                     if edges[i][0].point.x==vertex.point.x:
                         start=i
                         break
                 if(edges[start][0].point.y>edges[start][1].point.y):
-                    edge=broom.searchVertex(Broom(vertex,vertex,vertex))
+                    edge=sweepline.searchVertex(Sweepline(vertex,vertex,vertex))
                     if classification[edge.label.helper.point]=='laczace':
                         newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                    broom=broom.remove(edge.label)
-                    broom=broom.insert(Broom(vertex,edges[start][0],edges[start][1]))
+                    sweepline=sweepline.remove(edge.label)
+                    sweepline=sweepline.insert(Sweepline(vertex,edges[start][0],edges[start][1]))
                 else:
-                    edge=broom.searchBroom(Broom(vertex,vertex,vertex))
+                    edge=sweepline.searchSweepline(Sweepline(vertex,vertex,vertex))
                     if classification[edge.label.helper.point]=='laczace':
                         newEdges.append([edge.label.helper,vertex])
                     edge.label.helper=vertex
             elif classification[vertex.point]=='poczatkowe':
-                start=binarySearchLeftMost(edges,vertex.point.y,0,len(edges)-1)
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
                 for i in range(start,len(edges)):
                     if edges[i][0].point.x==vertex.point.x:
-                        broom=broom.insert(Broom(vertex,edges[i][0],edges[i][1]))
+                        sweepline=sweepline.insert(Sweepline(vertex,edges[i][0],edges[i][1]))
                         break
             elif classification[vertex.point]=='koncowe':
-                edge=broom.searchVertex(Broom(vertex,vertex,vertex))
+                edge=sweepline.searchVertex(Sweepline(vertex,vertex,vertex))
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                broom=broom.remove(edge.label)
+                sweepline=sweepline.remove(edge.label)
             elif classification[vertex.point]=='dzielace':
-                edge=broom.searchBroom(Broom(vertex,vertex,vertex))
-                print("dzielace:",edge.label.helper.point.y,edge.label.vertices[0].point.y)
+                edge=sweepline.searchSweepline(Sweepline(vertex,vertex,vertex))
                 newEdges.append([edge.label.helper,vertex])
                 edge.helper=vertex
-                start=binarySearchLeftMost(edges,vertex.point.y,0,len(edges)-1)
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
                 for i in range(start,len(edges)):
                     if edges[i][0].point.x==vertex.point.x:
-                        broom=broom.insert(Broom(vertex,edges[i][0],edges[i][1]))
+                        sweepline=sweepline.insert(Sweepline(vertex,edges[i][0],edges[i][1]))
                         break
             elif classification[vertex.point]=='laczace':
-                edge=broom.searchVertex(Broom(vertex,vertex,vertex))
+                edge=sweepline.searchVertex(Sweepline(vertex,vertex,vertex))
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
-                broom=broom.remove(edge.label)
-                edge=broom.searchBroom(Broom(vertex,vertex,vertex))
+                sweepline=sweepline.remove(edge.label)
+                edge=sweepline.searchSweepline(Sweepline(vertex,vertex,vertex))
                 if classification[edge.label.helper.point]=='laczace':
                     newEdges.append([edge.label.helper,edge.label.vertices[1]])
                 edge.label.helper=vertex
         return newEdges
 
-    def __partition_into_monotone_subpolygons(self):
-        edges = self.PrepareForTriangulation()
+    def prepare_for_triangulation(self):
+        classification = self.__classify_vertices()
+        points = self.vertices.copy()
+        edges = []
+        newEdges = []
+        for i in range(len(points)):
+            edges.append([points[i - 1], points[i]])
+        points.sort(key=(compareKey1), reverse=True)  
+        edges.sort(key=(compareKey2))  
+        sweepline = []  # miotla, na pozycji 0 ma pomocnika krawedzi, a na pozycji 1 krawedz
+        for vertex in points:
+            if classification[vertex.point]=='prawidlowe':
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
+                for i in range(start,len(edges)):
+                    if edges[i][0].point.x==vertex.point.x:
+                        start=i
+                        break
+                if(edges[start][0].point.y>edges[start][1].point.y):
+                    for edge in sweepline:
+                        if edge[1][1].point==vertex.point:
+                            if classification[edge[0].point]=='laczace':
+                                newEdges.append([edge[0],edge[1][1]])
+                            sweepline.remove(edge)
+                            break
+                    sweepline.append([vertex,edges[start]])
+                else:
+                    if len(sweepline)==1:
+                        if classification[sweepline[0][0].point]=='laczace':
+                            newEdges.append([sweepline[0][0],vertex])
+                        sweepline[0][0]=vertex
+                    else:
+                        indeks=0
+                        distance=float('inf')
+                        for i in range(len(sweepline)):
+                            curr_dis=((sweepline[i][1][0].point.x-sweepline[i][1][1].point.x)/(sweepline[i][1][0].point.y-sweepline[i][1][1].point.y)*
+                               (vertex.point.y-sweepline[i][1][1].point.y)+sweepline[i][1][1].point.x)
+                            curr_dis-=vertex.point.x
+                            curr_dis*=-1
+                            type(curr_dis)
+                            if curr_dis>0 and curr_dis<distance:
+                                distance=curr_dis
+                                indeks=i
+                        if classification[sweepline[indeks][0].point]=='laczace':
+                            newEdges.append([sweepline[indeks][0],vertex])
+                        sweepline[indeks][0]=vertex
+            elif classification[vertex.point]=='poczatkowe':
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
+                for i in range(start,len(edges)):
+                    if edges[i][0].point.x==vertex.point.x:
+                        sweepline.append([vertex,edges[i]])
+                        break
+            elif classification[vertex.point]=='koncowe':
+                for edge in sweepline:
+                    if edge[1][1].point==vertex.point:
+                        if classification[edge[0].point]=='laczace':
+                            newEdges.append([edge[0],edge[1][1]])
+                        sweepline.remove(edge)
+                        break
+            elif classification[vertex.point]=='dzielace':
+                indeks=0
+                distance=float('inf')
+                for i in range(len(sweepline)):
+                    curr_dis=((sweepline[i][1][0].point.x-sweepline[i][1][1].point.x)/(sweepline[i][1][0].point.y-sweepline[i][1][1].point.y)*
+                       (vertex.point.y-sweepline[i][1][1].point.y)+sweepline[i][1][1].point.x)
+                    curr_dis-=vertex.point.x
+                    curr_dis*=-1
+                    if curr_dis>0 and curr_dis<distance:
+                        distance=curr_dis
+                        indeks=i
+                newEdges.append([vertex,sweepline[indeks][0]])
+                sweepline[indeks][0]=vertex
+                start=binary_searchleftmost(edges,vertex.point.y,0,len(edges)-1)
+                for i in range(start,len(edges)):
+                    if edges[i][0].point.x==vertex.point.x:
+                        sweepline.append([vertex,edges[i]])
+                        break
+            elif classification[vertex.point]=='laczace':
+                for edge in sweepline:
+                    if edge[1][1].point==vertex.point:
+                        if classification[edge[0].point]=='laczace':
+                            newEdges.append([edge[0],edge[1][1]])
+                        sweepline.remove(edge)
+                if len(sweepline)==1:
+                    if classification[sweepline[0][0].point]=='laczace':
+                        newEdges.append([sweepline[0][0],sweepline[0][1][1]])
+                    sweepline[0][0]=vertex
+                else:
+                    indeks=0
+                    distance=float('inf')
+                    for i in range(len(sweepline)):
+                        curr_dis=((sweepline[i][1][0].point.x-sweepline[i][1][1].point.x)/(sweepline[i][1][0].point.y-sweepline[i][1][1].point.y)*
+                           (vertex.point.y-sweepline[i][1][1].point.y)+sweepline[i][1][1].point.x)
+                        curr_dis-=vertex.point.x
+                        curr_dis*=-1
+                        if curr_dis>0 and curr_dis<distance:
+                            distance=curr_dis
+                            indeks=i
+                    if classification[sweepline[indeks][0].point]=='laczace':
+                        newEdges.append([sweepline[indeks][0],sweepline[indeks][1][1]])
+                    sweepline[indeks][0]=vertex
+        self.scenes.append(Scene(lines=[LinesCollection(self.sides),
+                                        LinesCollection([Point.to_line(v[0].point, v[1].point) for v in newEdges],
+                                                        color='crimson')]))
+        return newEdges
+
+    def __partition_into_monotone_subpolygons(self, edges = None):
+        if edges is None:
+            edges = self.prepare_for_triangulation()
         vertices = {}
         vertices_index = {}
         for v in self.vertices:
             vertices[v] = []
         for i in range(len(self.vertices)):
             vertices_index[self.vertices[i]] = i
-        for v1,v2 in edges:     #TODO sort
+        for v1,v2 in edges:
             if vertices_index[v1] < vertices_index[v2]:
                 vertices[v2].append(v1)
             else:
                 vertices[v1].append(v2)
+        for v in self.vertices:
+            if vertices[v]:
+                vertices[v].sort(key=lambda v:vertices_index[v])
         ver = self.vertices.copy()
         e = len(edges)
         subpolygons = []
-        diff = 0
-        """
-        if edges:
-            start_i = vertices_index[min(edges[0][0], edges[0][1], key = lambda e: vertices_index[e])]
-            ver = ver[start_i:] + ver[:start_i]
-            for i in range(len(ver)):
-                vertices_index[ver[i]] = i"""
-                #to przerobic zeby wystapoealo jakos tak przed 255 linijka
+
 
         def new_subpolygon(t, index, ver, vertices, subpolygons, e):
             i = index
             j = index
             first_loop = True
-            current_subpolygon_vertices = [ver[j]]
             while(first_loop or (e>0 and ver[j] != t)):
                 curr = ver[j]
                 if first_loop:
                     first_loop = False
                 if not vertices[ver[j]]:
                     j += 1
-                    current_subpolygon_vertices.append(ver[j])
                 else:
                     tmp = vertices[ver[j]][-1]
                     vertices[ver[j]].pop()
                     e, ver = new_subpolygon(ver[j], vertices_index[tmp], ver, vertices, subpolygons, e)
                     j -= len(subpolygons[-1].vertices) - 2
-                    ss = j - 1
+                    ss = j
                     while (ss != len(ver)):
                         vertices_index[ver[ss]] -= len(subpolygons[-1].vertices) - 2
                         ss += 1
-                    current_subpolygon_vertices = current_subpolygon_vertices[:(-1)*(len(subpolygons[-1].vertices)-1)] + [current_subpolygon_vertices[-1]]
             if e == 0:
                 current_subpolygon_vertices = [] + ver
+            else:
+                current_subpolygon_vertices = ver[i:j+1]
             subpolygons.append(Polygon(current_subpolygon_vertices))
             return e-1, ver[:i+1] + ver[j:]
         new_subpolygon(ver[0], 0, ver, vertices, subpolygons, e)
@@ -241,85 +345,17 @@ class Polygon:
         for sp in subpolygons:
             sd = [] + sd + sp.sides.copy()
             sp.parent = self
-            #self.scenes.append(Scene(lines = [LinesCollection(sp.sides.copy(), color = 'green')]))
+            self.scenes.append(Scene(lines = [LinesCollection(sp.sides.copy(), color = 'green')]))
+            trl = []
+            for tr in sp.triangles:
+                trl += tr.to_list()
+            self.scenes.append(Scene(lines = [LinesCollection(trl, color = 'crimson')]))
         return subpolygons
-        zz = 1
-
-
-
-    """
-    def __partition_into_monotone_subpolygons(self):
-        edges = self.PrepareForTriangulation()
-        vertices = {}
-        for v in self.vertices:
-            vertices[v] = []
-        for e1, e2 in edges:
-            vertices[e1].append(e2)
-            vertices[e2].append(e1)
-        for v in self.vertices:
-            bottom_point = self.vertices[self.bottom_point_index].point
-            vertices[v].sort(key=lambda v: (v.point.x - bottom_point.x) / (
-                        v.point.y - bottom_point.y) if v.point.y - bottom_point.y != 0 else float('inf'), reverse=True)
-        subpolygons = []
-        start_vertex = 0
-        ver = self.vertices.copy() #+ self.vertices.copy()
-        for i in range(len(ver)):
-            v = ver[i]
-            if vertices[v]:
-                if vertices[v][0] == edges[0][0]:
-                    start_vertex = i
-                    break
-        ver = ver[start_vertex:] + ver[:start_vertex]
-        ver += [ver[0]]
-        n = len(ver)#/2 + start_vertex
-        while()
-        
-        
-        
-        
-        
-        
-        def gen_subpolygon(t, index, subpolygons, ver, n, vertices):
-            first_loop = True
-            i = index
-            current_subpolygon_vertices = [ver[i]]
-            while((ver[i] != t or first_loop)):
-                self.scenes.append(Scene(lines = [LinesCollection(self.sides)], points= [PointsCollection([ver[i].point.to_tuple()], color = 'crimson')]))
-                self.scenes.append(Scene(lines = [LinesCollection([Point.to_line(ver[ii].point, ver[(ii+1)%len(ver)].point) for ii in range(len(ver))], color = 'green')], points= [PointsCollection([ver[i].point.to_tuple()], color = 'crimson')]))
-                print(ver)
-                if first_loop:
-                    first_loop = False
-                if not vertices[ver[i]]:
-                    i += 1
-                    i = i
-                else: #while
-                    next_vertex = vertices[ver[i]].pop()
-                    
-                    if vertices[next_vertex]:
-                        for nv in vertices[next_vertex]:
-                            if nv == ver[i]:
-                                vertices[next_vertex].remove(ver)
-                                break
-                    ver = gen_subpolygon(next_vertex, i, subpolygons, ver, n, vertices)
-                    teee = 1
-                current_subpolygon_vertices.append(ver[i])
-            current_subpolygon_vertices.append(t)
-            subpolygons.append(Polygon(current_subpolygon_vertices))
-            return ver[:index+1]+ver[i:]
-        gen_subpolygon(ver[0], 0, subpolygons, ver, n, vertices)
-        
-        for spol in subpolygons:
-            self.scenes.append(Scene(lines = [LinesCollection(spol.sides)]))
-        zzz = 100
-        """
-
 
 
     def triangulate(self):
         if not self.__is_y_monotone():
-            print("BLAD W __triangulate()")  # TODO pozniej usunac
-            #raise IOError
-            #return
+            print("BLAD W __triangulate()")
         if self.__is_triangulated:
             return
         if len(self.vertices) < 3:
@@ -364,52 +400,42 @@ class Polygon:
         ts = []
         self.scenes.append(Scene(lines = [LinesCollection([tr.to_list()[i] for tr in self.triangles for i in range(3)], color = 'crimson')]))
         self.__is_triangulated = True
-        """
-        if len(S) > 3:
-            tmp_polygon = Polygon([V[s][0] for s in S])
-            tmp_polygon.triangulate()
-            for tr in list(tmp_polygon.triangles):
-                self.add_triangle(tr)
-        
-        while len(S) > 3:
-            for i in range(1,len(S)):
-                if Point.orientation(V[S[0]][0].point, V[S[1]][0].point, V[S[2]][0].point) != Point.orientation(V[S[i]][0].point, V[S[i+1]][0].point, V[S[i+2]][0].point):
-                    self.add_triangle(Triangle(V[S[0]][0], V[S[1]][0], V[S[2]][0]))
-                    S = S[:1] + S[2:]
-                    break
-                self.add_triangle(Triangle(V[S[0]][0], V[S[1]][0], V[S[2]][0]))
-                S = S[:1] + S[2:]
-                """
-        #if len(S) == 3:
-        #    self.add_triangle(Triangle(V[S[0]][0], V[S[1]][0], V[S[2]][0]))
 
 
-    def __triangulation(self):
-        if self.__is_y_monotone():
+    def __triangulation(self, diagonals = None):
+        if self.__is_triangulated:
+            return
+        if self.__is_y_monotone() and diagonals == None:
             self.triangulate()
         else:
-            subpolygons = self.__partition_into_monotone_subpolygons()
+            subpolygons = self.__partition_into_monotone_subpolygons(edges=diagonals)
             for sb in subpolygons:
-                sb.triangulate()
-                for tr in list(sb.triangles):
-                    self.add_triangle(tr)
+                sb.__triangulation()
+                self.sub_polygons.append(sb)
+                if diagonals is not None:
+                    for tr in list(sb.triangles):
+                        self.add_triangle(tr, change = False)
+                else:
+                    for tr in list(sb.triangles):
+                        self.add_triangle(tr)
             self.scenes += sb.scenes
         s = []
         for tr in list(self.triangles):
             s += tr.to_list()
         self.scenes.append(Scene(lines= [LinesCollection(self.sides), LinesCollection(s, color='yellow')]))
+        self.__is_triangulated = True
 
 
-    def actions(self):
-        self.__triangulation()
-        # self.__classify_vertices()
-        # self.PrepareForTriangulation()
+    def actions(self, diagonals = None):
+        if diagonals is not None:
+            self.additional_diagonals = diagonals
+        self.__triangulation(diagonals=diagonals)
 
 
-    def to_scene(self, triangles = False, color = 'dodgerblue'):
+    def to_scene(self, triangles = True, color = 'dodgerblue', color2 = 'dodgerblue'):
+        if not triangles:
+            return Scene(lines=[LinesCollection(self.sides, color=color)])
         triangles = []
         for tr in self.triangles:
             triangles += tr.to_list()
-        return Scene(lines=[LinesCollection(triangles, color = color),
-                            LinesCollection(self.sides, color = color)
-                    ])
+        return Scene(lines=[LinesCollection(triangles, color = color2), LinesCollection(self.sides, color = color)])
